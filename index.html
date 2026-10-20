@@ -3,7 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>All-in-One Calculator</title>
+<title>All-in-One Calculator</title> 
+  <link rel="manifest" href="manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
 <style>
 :root{--bg:#fbfbfd;--fg:#2b2622;--card:#fff;--muted:#6b645c;--teal:#8fddbf;--key:#f5b65a;--keyfg:#57504a;--orange:#ff7f27;--line:#e3e3ea;--field:#f3f3f7;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
