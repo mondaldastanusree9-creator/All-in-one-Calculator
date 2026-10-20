@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>All-in-One Calculator</title>
+<style>
+:root{--bg:#fbfbfd;--fg:#2b2622;--card:#fff;--muted:#6b645c;--teal:#8fddbf;--key:#f5b65a;--keyfg:#57504a;--orange:#ff7f27;--line:#e3e3ea;--field:#f3f3f7;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17191d;--fg:#f1ece6;--card:#23262c;--muted:#a9a29a;--line:#363a42;--field:#2c3037}}
+:root[data-theme="dark"]{--bg:#17191d;--fg:#f1ece6;--card:#23262c;--muted:#a9a29a;--line:#363a42;--field:#2c3037}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif}
+button,input,select{font:inherit;color:inherit}
+.app{position:relative;max-width:520px;height:100%;margin:0 auto;overflow:hidden}
+.view{position:absolute;inset:0;display:none;flex-direction:column}
+.view.on{display:flex}
+/* main */
+.display{flex:1;position:relative;padding:20px;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;min-height:0}
+.expr{color:var(--muted);font-size:22px;min-height:28px;word-break:break-all;text-align:right}
+.res{font-size:clamp(40px,12vw,64px);font-weight:700;word-break:break-all;text-align:right;line-height:1.1}
+.small{position:absolute;left:16px;bottom:16px;display:flex;gap:8px}
+.small button{border:0;background:var(--field);border-radius:14px;width:48px;height:40px;font-size:18px;cursor:pointer}
+.menu{position:absolute;top:16px;right:16px;width:44px;height:44px;border:0;background:none;padding:0;display:grid;grid-template:1fr 1fr/1fr 1fr;gap:3px;cursor:pointer}
+.menu i{border-radius:4px;border:1px solid rgba(255,255,255,.5)}
+.menu i:nth-child(1),.menu i:nth-child(4){background:#ff1a7f}
+.menu i:nth-child(2),.menu i:nth-child(3){background:#0047ff}
+.pad{background:var(--teal);padding:4vh 5% 5vh;display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(10px,3vw,18px)}
+.pad button{aspect-ratio:1;border:0;border-radius:30%;font-size:clamp(26px,8vw,40px);font-weight:700;background:var(--key);color:var(--keyfg);cursor:pointer}
+.pad button.op{background:#fff}
+.pad button:active{transform:scale(.94)}
+/* side panel */
+.shade{position:absolute;inset:0;background:rgba(0,0,0,.25);display:none;z-index:5}
+.shade.on{display:block}
+.panel{position:absolute;top:70px;right:16px;width:210px;max-height:calc(100% - 90px);overflow:auto;background:var(--orange);border-top:6px solid #e8202a;border-bottom:6px solid #e8202a;z-index:6;display:none;padding:6px 0;color:#1a1208}
+.panel.on{display:block}
+.panel button{display:block;width:100%;text-align:left;background:none;border:0;padding:10px 16px;font-size:16px;cursor:pointer}
+.panel button:hover{background:rgba(255,255,255,.25)}
+.panel .more{font-weight:800}
+/* top bar */
+.bar{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.bar h1{font-size:20px;margin:0}
+.back{border:0;background:var(--field);border-radius:12px;width:40px;height:40px;font-size:20px;cursor:pointer}
+.scroll{flex:1;overflow:auto;padding:0 16px 24px}
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;text-align:center;font-size:14px}
+.ic{width:52px;height:52px;border-radius:30%;display:grid;place-items:center;font-weight:800;font-size:17px;color:#2b2622}
+/* calc form */
+.form{display:grid;gap:12px}
+label{display:grid;gap:4px;font-size:14px;color:var(--muted)}
+input,select{background:var(--field);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:18px;color:var(--fg);width:100%;box-sizing:border-box}
+.go{border:0;border-radius:16px;padding:14px;font-size:18px;font-weight:700;background:var(--orange);color:#1a1208;cursor:pointer}
+.out{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:grid;gap:8px;word-break:break-all}
+.out div{display:flex;justify-content:space-between;gap:12px}
+.out span{color:var(--muted)}
+.out b{font-size:20px;text-align:right}
+.err{color:#d6322e}
+:focus-visible{outline:3px solid #0047ff;outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="view on" id="v-main">
+    <div class="display">
+      <button class="menu" id="menuBtn" aria-label="Open calculator list"><i></i><i></i><i></i><i></i></button>
+      <div class="small"><button id="clr" aria-label="Clear">C</button><button id="del" aria-label="Delete">⌫</button></div>
+      <div class="expr" id="expr"></div>
+      <div class="res" id="res">0</div>
+    </div>
+    <div class="pad" id="pad"></div>
+    <div class="shade" id="shade"></div>
+    <div class="panel" id="panel"></div>
+  </section>
+  <section class="view" id="v-more">
+    <div class="bar"><button class="back" data-go="main" aria-label="Back">←</button><h1>All calculators</h1></div>
+    <div class="scroll"><div class="grid" id="grid"></div></div>
+  </section>
+  <section class="view" id="v-calc">
+    <div class="bar"><button class="back" id="calcBack" aria-label="Back">←</button><h1 id="calcTitle"></h1></div>
+    <div class="scroll"><div class="form" id="form"></div><div id="out"></div></div>
+  </section>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+function show(n){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+n));closePanel()}
+/* ---------- helpers ---------- */
+const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a};
+const fmt=x=>Number.isFinite(x)?String(+x.toPrecision(12)):'Error';
+const frac=(n,d)=>{if(d===0)throw'Denominator cannot be 0';if(d<0){n=-n;d=-d}const k=gcd(n,d)||1;return[n/k,d/k]};
+const fs=(n,d)=>d===1?String(n):n+'/'+d;
+const mixed=(n,d)=>{const s=n<0?'-':'',a=Math.abs(n),w=Math.floor(a/d),r=a%d;return r===0?s+w:(w?s+w+' '+r+'/'+d:s+r+'/'+d)};
+const fop=(n1,d1,n2,d2,op)=>{if(!d1||!d2)throw'Denominator cannot be 0';let n,d;
+ if(op==='+'){n=n1*d2+n2*d1;d=d1*d2}else if(op==='−'){n=n1*d2-n2*d1;d=d1*d2}
+ else if(op==='×'){n=n1*n2;d=d1*d2}else{if(n2===0)throw'Cannot divide by zero';n=n1*d2;d=d1*n2}
+ return frac(n,d)};
+const ints=v=>{v.forEach(x=>{if(!Number.isInteger(x))throw'Please enter whole numbers'})};
+const list=s=>{const a=s.split(/[\s,]+/).filter(Boolean).map(Number);if(!a.length||a.some(isNaN))throw'Enter numbers separated by commas';return a};
+const OPS=['+','−','×','÷'];
+const N=(k,l,v)=>({k,l,t:'n',v});
+const S=(k,l,o)=>({k,l,t:'s',o});
+const T=(k,l,v)=>({k,l,t:'t',v});
+/* ---------- calculators ---------- */
+const C=[
+{id:'percent',name:'Percentage',ic:'%',c:'#ffb3d1',f:[S('m','Type',['A% of B','A is what % of B','% change from A to B']),N('a','A'),N('b','B')],
+ run:v=>{if(v.m==='0')return[['Result',fmt(v.a/100*v.b)]];if(v.b===0&&v.m==='1')throw'B cannot be 0';if(v.a===0&&v.m==='2')throw'A cannot be 0';
+  return v.m==='1'?[['Result',fmt(v.a/v.b*100)+'%']]:[['Change',fmt((v.b-v.a)/Math.abs(v.a)*100)+'%']]}},
+{id:'fraction',name:'Fraction',ic:'½',c:'#b8d4ff',f:[N('n1','Numerator 1'),N('d1','Denominator 1','1'),S('op','Operation',OPS),N('n2','Numerator 2'),N('d2','Denominator 2','1')],
+ run:v=>{ints([v.n1,v.d1,v.n2,v.d2]);const[n,d]=fop(v.n1,v.d1,v.n2,v.d2,OPS[v.op]);return[['Fraction',fs(n,d)],['Mixed',mixed(n,d)],['Decimal',fmt(n/d)]]}},
+{id:'decimal',name:'Decimal Calculation',ic:'0.5',c:'#c9f0d8',f:[N('a','First number'),S('op','Operation',OPS),N('b','Second number')],
+ run:v=>{const o=OPS[v.op];if(o==='÷'&&v.b===0)throw'Cannot divide by zero';return[['Result',fmt(o==='+'?v.a+v.b:o==='−'?v.a-v.b:o==='×'?v.a*v.b:v.a/v.b)]]}},
+{id:'mixed',name:'Mixed Number Calculation',ic:'1½',c:'#ffe29a',f:[N('w1','Whole 1'),N('n1','Numerator 1'),N('d1','Denominator 1','1'),S('op','Operation',OPS),N('w2','Whole 2'),N('n2','Numerator 2'),N('d2','Denominator 2','1')],
+ run:v=>{ints([v.w1,v.n1,v.d1,v.w2,v.n2,v.d2]);if(!v.d1||!v.d2)throw'Denominator cannot be 0';
+  const imp=(w,n,d)=>(w<0||Object.is(w,-0)?-1:1)*(Math.abs(w)*d+n);
+  const[n,d]=fop(imp(v.w1,v.n1,v.d1),v.d1,imp(v.w2,v.n2,v.d2),v.d2,OPS[v.op]);return[['Mixed',mixed(n,d)],['Improper',fs(n,d)],['Decimal',fmt(n/d)]]}},
+{id:'ratio',name:'Ratio',ic:'a:b',c:'#e2c9ff',f:[N('a','A'),N('b','B')],
+ run:v=>{ints([v.a,v.b]);const k=gcd(v.a,v.b);if(!k)throw'A and B cannot both be 0';return[['Simplified',v.a/k+' : '+v.b/k],['A ÷ B',v.b?fmt(v.a/v.b):'—']]}},
+{id:'proportion',name:'Proportion',ic:'=',c:'#ffd0b0',f:[N('a','A  (A : B = C : X)'),N('b','B'),N('c','C')],
+ run:v=>{if(v.a===0)throw'A cannot be 0';return[['X',fmt(v.b*v.c/v.a)]]}},
+{id:'average',name:'Average',ic:'x̄',c:'#c9f0d8',f:[T('l','Numbers (comma separated)','4, 8, 15, 16')],
+ run:v=>{const a=list(v.l),s=a.reduce((x,y)=>x+y,0),o=[...a].sort((x,y)=>x-y),h=o.length>>1;
+  return[['Average',fmt(s/a.length)],['Median',fmt(o.length%2?o[h]:(o[h-1]+o[h])/2)],['Sum',fmt(s)],['Count',a.length],['Min',fmt(o[0])],['Max',fmt(o[o.length-1])]]}},
+{id:'rounding',name:'Rounding',ic:'≈',c:'#b8d4ff',f:[N('a','Number'),N('p','Decimal places','0')],
+ run:v=>{ints([v.p]);if(v.p<0||v.p>12)throw'Decimal places must be 0 to 12';const m=10**v.p;return[['Round',fmt(Math.round(v.a*m)/m)],['Round down',fmt(Math.floor(v.a*m)/m)],['Round up',fmt(Math.ceil(v.a*m)/m)]]}},
+{id:'abs',name:'Absolute Value',ic:'|x|',c:'#ffb3d1',f:[N('a','Number')],run:v=>[['|x|',fmt(Math.abs(v.a))]]},
+{id:'recip',name:'Reciprocal',ic:'1/x',c:'#ffe29a',f:[N('a','Number')],run:v=>{if(v.a===0)throw'0 has no reciprocal';return[['1 ÷ x',fmt(1/v.a)]]}},
+{id:'fact',name:'Factorial',ic:'n!',c:'#e2c9ff',f:[N('a','Whole number (0 to 170)')],
+ run:v=>{ints([v.a]);if(v.a<0||v.a>170)throw'Enter a whole number from 0 to 170';let r=1n;for(let i=2n;i<=BigInt(v.a);i++)r*=i;return[['n!',r.toString()]]}},
+{id:'mod',name:'Modulo',ic:'mod',c:'#ffd0b0',f:[N('a','Dividend'),N('b','Divisor')],
+ run:v=>{if(v.b===0)throw'Divisor cannot be 0';return[['Remainder',fmt(((v.a%v.b)+v.b)%v.b)],['Quotient',fmt(Math.trunc(v.a/v.b))]]}},
+{id:'gcd',name:'GCD',ic:'gcd',c:'#c9f0d8',f:[T('l','Whole numbers (comma separated)','12, 18, 24')],
+ run:v=>{const a=list(v.l);ints(a);return[['GCD',a.reduce(gcd)]]}},
+{id:'lcm',name:'LCM',ic:'lcm',c:'#b8d4ff',f:[T('l','Whole numbers (comma separated)','4, 6, 10')],
+ run:v=>{const a=list(v.l);ints(a);return[['LCM',a.reduce((x,y)=>x&&y?Math.abs(x*y)/gcd(x,y):0)]]}},
+{id:'square',name:'Square',ic:'x²',c:'#ffb3d1',f:[N('a','Number')],run:v=>[['x²',fmt(v.a**2)]]},
+{id:'cube',name:'Cube',ic:'x³',c:'#ffe29a',f:[N('a','Number')],run:v=>[['x³',fmt(v.a**3)]]},
+{id:'power',name:'Power / Exponent',ic:'xʸ',c:'#e2c9ff',f:[N('a','Base'),N('b','Exponent')],run:v=>[['xʸ',fmt(v.a**v.b)]]},
+{id:'sqrt',name:'Square Root',ic:'√',c:'#ffd0b0',f:[N('a','Number')],run:v=>v.a<0?[['√x',fmt(Math.sqrt(-v.a))+' i']]:[['√x',fmt(Math.sqrt(v.a))]]}
+];
+const byId=id=>C.find(x=>x.id===id);
+/* ---------- calculator view ---------- */
+function open(id){
+  const c=byId(id);$('#calcTitle').textContent=c.name;$('#out').innerHTML='';
+  $('#form').innerHTML=c.f.map(f=>'<label>'+f.l+(f.t==='s'
+    ?'<select name="'+f.k+'">'+f.o.map((o,i)=>'<option value="'+i+'">'+o+'</option>').join('')+'</select>'
+    :'<input name="'+f.k+'" '+(f.t==='n'?'type="number" step="any" inputmode="decimal"':'type="text"')+' value="'+(f.v||'')+'"></label>')+(f.t==='s'?'</label>':'')).join('')
+    +'<button class="go" id="go">Calculate</button>';
+  const run=()=>{
+    const v={};
+    try{
+      c.f.forEach(f=>{const e=$('#form [name='+f.k+']');
+        if(f.t==='n'){if(e.value.trim()==='')throw'Please fill in every field';v[f.k]=Number(e.value)}else v[f.k]=e.value});
+      const rows=c.run(v);
+      $('#out').innerHTML='<div class="out">'+rows.map(r=>'<div><span>'+r[0]+'</span><b>'+r[1]+'</b></div>').join('')+'</div>';
+    }catch(e){$('#out').innerHTML='<div class="out err">'+(typeof e==='string'?e:'Something went wrong. Check your numbers.')+'</div>'}
+  };
+  $('#go').onclick=run;
+  $('#form').onkeydown=e=>{if(e.key==='Enter')run()};
+  show('calc');
+}
+/* ---------- more page + side panel ---------- */
+$('#grid').innerHTML=C.map(c=>'<button class="tile" data-id="'+c.id+'"><span class="ic" style="background:'+c.c+'">'+c.ic+'</span>'+c.name+'</button>').join('');
+const quick=['square','cube','power','sqrt','percent','fraction','decimal','mixed','ratio','proportion'];
+$('#panel').innerHTML=quick.map(id=>'<button data-id="'+id+'">'+byId(id).name+'</button>').join('')+'<button class="more" data-go="more">MORE</button>';
+function closePanel(){$('#panel').classList.remove('on');$('#shade').classList.remove('on')}
+$('#menuBtn').onclick=()=>{$('#panel').classList.toggle('on');$('#shade').classList.toggle('on')};
+$('#shade').onclick=closePanel;
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-id],[data-go]');if(!b)return;
+  if(b.dataset.id)open(b.dataset.id);else show(b.dataset.go);
+});
+let lastView='main';
+$('#calcBack').onclick=()=>show('more');
+/* ---------- basic calculator ---------- */
+let ex='',done=false;
+const sym={'*':'×','/':'÷','-':'−'};
+const pretty=s=>s.replace(/[*\/-]/g,m=>sym[m]);
+const rows=[['1','2','3','+'],['4','5','6','-'],['7','8','9','*'],['.','0','=','/']];
+rows.flat().forEach(k=>{
+  const b=document.createElement('button');b.textContent=sym[k]||k;
+  if(isNaN(k)&&k!=='.')b.className='op';
+  b.onclick=()=>press(k);$('#pad').appendChild(b);
+});
+function evalNow(){
+  if(!ex)return;
+  if(!/^[\d+\-*\/. ]+$/.test(ex)){return}
+  try{const r=Function('"use strict";return ('+ex+')')();
+    if(!Number.isFinite(r))throw 0;
+    $('#expr').textContent=pretty(ex)+' =';$('#res').textContent=fmt(r);ex=String(+r.toPrecision(12));done=true;
+  }catch(e){$('#res').textContent='Error';ex='';done=true}
+}
+function press(k){
+  if(k==='='){evalNow();return}
+  const isOp='+-*/'.includes(k);
+  if(done&&!isOp)ex='';
+  done=false;
+  if(isOp&&(ex===''&&k!=='-'))return;
+  if(isOp&&/[+\-*\/]$/.test(ex))ex=ex.slice(0,-1);
+  ex+=k;$('#expr').textContent='';$('#res').textContent=pretty(ex);
+}
+$('#clr').onclick=()=>{ex='';done=false;$('#expr').textContent='';$('#res').textContent='0'};
+$('#del').onclick=()=>{if(done)return;ex=ex.slice(0,-1);$('#res').textContent=ex?pretty(ex):'0'};
+</script>
+</body>
+</html>
