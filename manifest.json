@@ -1,0 +1,16 @@
+{
+  "name": "All in one Calculator",
+  "short_name": "Calculator",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#fbfbfd",
+  "theme_color": "#ff7f27",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2344/2344132.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
